@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Black & White Runner Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: white;
+      color: black;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: white;
+      border: 2px solid black;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+    button {
+      font-size: 18px;
+      margin: 5px;
+      padding: 10px 20px;
+      border: 2px solid black;
+      border-radius: 8px;
+      background: white;
+      color: black;
+      cursor: pointer;
+    }
+    button:hover {
+      background: black;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="controls">
+    <button onclick="setDifficulty('easy')">Easy</button>
+    <button onclick="setDifficulty('medium')">Medium</button>
+    <button onclick="setDifficulty('hard')">Hard</button>
+    <button onclick="restartGame()">Restart</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = 400;
+
+    let human = { x: 50, y: 300, width: 25, height: 50, vy: 0, jumping: false };
+    let gravity = 0.5;
+    let obstacles = [];
+    let score = 0;
+    let highScore = 0;
+    let speed = 4;
+    let difficulty = 'easy';
+
+    function drawHuman(x, y) {
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(x + 12, y - 55, 10, 0, Math.PI * 2); ctx.stroke(); // Head
+      ctx.beginPath(); ctx.moveTo(x + 12, y - 45); ctx.lineTo(x + 12, y - 15); ctx.stroke(); // Body
+      ctx.beginPath(); ctx.moveTo(x + 12, y - 40); ctx.lineTo(x - 5, y - 25); ctx.moveTo(x + 12, y - 40); ctx.lineTo(x + 30, y - 25); ctx.stroke(); // Arms
+      ctx.beginPath(); ctx.moveTo(x + 12, y - 15); ctx.lineTo(x, y); ctx.moveTo(x + 12, y - 15); ctx.lineTo(x + 25, y); ctx.stroke(); // Legs
+    }
+
+    function drawBuilding(x, y, width, height) {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(x, y - height, width, height);
+      ctx.fillStyle = 'white';
+      for (let i = 20; i < height; i += 40) ctx.fillRect(x + 8, y - i, width - 16, 6);
+    }
+
+    function createObstacle() {
+      if (Math.random() < 0.015) {
+        const height = 40 + Math.random() * 80;
+        const width = 30 + Math.random() * 30;
+        obstacles.push({ x: canvas.width, y: 350, width, height });
+      }
+    }
+
+    function updateObstacles() {
+      for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].x -= speed;
+        drawBuilding(obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
+        if (obstacles[i].x + obstacles[i].width < 0) {
+          obstacles.splice(i, 1);
+          score++;
+        }
+        if (human.x < obstacles[i].x + obstacles[i].width && human.x + human.width > obstacles[i].x && human.y > obstacles[i].y - obstacles[i].height) {
+          gameOver();
+        }
+      }
+    }
+
+    function jump() {
+      if (!human.jumping) {
+        human.vy = -10;
+        human.jumping = true;
+      }
+    }
+
+    function setDifficulty(level) {
+      difficulty = level;
+      if (level === 'easy') speed = 4;
+      if (level === 'medium') speed = 6;
+      if (level === 'hard') speed = 8;
+    }
+
+    function restartGame() {
+      human.y = 300;
+      human.vy = 0;
+      human.jumping = false;
+      obstacles = [];
+      score = 0;
+    }
+
+    function gameOver() {
+      highScore = Math.max(highScore, score);
+      alert(`Game Over!\nScore: ${score}\nHigh Score: ${highScore}`);
+      restartGame();
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 350, canvas.width, 50);
+      human.vy += gravity;
+      human.y += human.vy;
+      if (human.y >= 300) {
+        human.y = 300;
+        human.vy = 0;
+        human.jumping = false;
+      }
+      drawHuman(human.x, human.y);
+      createObstacle();
+      updateObstacles();
+      ctx.fillStyle = 'black';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Score: ${score}`, 20, 30);
+      ctx.fillText(`High Score: ${highScore}`, 20, 60);
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+    });
+
+    update();
+  </script>
+</body>
+</html>
